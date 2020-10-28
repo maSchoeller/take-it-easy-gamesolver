@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text;
 
 namespace MaSchoeller.TakeItEasySolver.Shared.Models
 {
@@ -13,10 +14,10 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
 
         //      Y/X          ---
         //             ___ / 4/4 \ ___ 
-        //      ___  / 4/3 \     / 3/4 \     
-        //    / 4/2  \       ---         ---
-        //    \        ___ / 3/3 \ ___ / 2/4 \
-        //      ___  / 3/2 \     / 2/3 \     /
+        //           / 4/3 \     / 3/4 \     
+        //      ___  \       ---         ---
+        //    / 4/2    ___ / 3/3 \ ___ / 2/4 \
+        //    \ ___  / 3/2 \     / 2/3 \     /
         //    / 3/1  \       ---         ---
         //    \        ___ / 2/2 \ ___ / 1/3 \
         //      ___  / 2/1 \     / 1/2 \     /
@@ -26,7 +27,7 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
         //           \ Y/X   ---   Y/X   ---
         //             ___ / 0/0 \ ___ / 
         //                 \ Y/X /    
-        //                   ---       
+        //                   ---
 
         public Gamefield()
         {
@@ -196,6 +197,38 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
                 }
             }
             return new RowInfo(isFinished, isCorruped, (isCorruped ? (2 + row % 3) * number : 0));
+        }
+
+        public override string ToString()
+        {
+            var builder = new StringBuilder();
+
+            builder.AppendLine(@$"       Y/X         ---                     ");
+            builder.AppendLine(@$"                 /     \                   ");
+            builder.AppendLine(@$"             ---         ---               ");
+            builder.AppendLine(@$"           /     \     /     \             ");
+            builder.AppendLine(@$"       ---         ---         ---         ");
+            builder.AppendLine(@$"     /     \     /     \     /     \       ");
+            builder.AppendLine(@$"             ---         ---               ");
+            builder.AppendLine(@$"     \     /     \     /     \     /       ");
+            builder.AppendLine(@$"       ---         ---         ---         ");
+            builder.AppendLine(@$"     /     \     /     \     /     \       ");
+            builder.AppendLine(@$"             ---         ---               ");
+            builder.AppendLine(@$"     \     /     \     /     \     /       ");
+            builder.AppendLine(@$"       ---         ---         ---         ");
+            builder.AppendLine(@$"     /     \     /     \     /     \       ");
+            builder.AppendLine(@$"             ---         ---               ");
+            builder.AppendLine(@$"     \     /     \     /     \     /       ");
+            builder.AppendLine(@$"       ---         ---         ---         ");
+            builder.AppendLine(@$"           \     /     \     /             ");
+            builder.AppendLine(@$"             ---         ---               ");
+            builder.AppendLine(@$"                 \     /                   ");
+            builder.AppendLine(@$"                   ---                     ");
+
+
+           
+
+            return base.ToString();
         }
     }
 }

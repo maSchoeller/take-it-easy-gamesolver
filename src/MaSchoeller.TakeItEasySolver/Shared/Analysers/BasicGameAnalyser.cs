@@ -17,7 +17,10 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Analysers
             {
                 var info = gamefield.GetPositioInfo(item.x, item.y,gamecard);
                 if (maxPoints < info.Points)
+                {
                     actualPosition = item;
+                    maxPoints = info.Points;
+                }
             }
 
             return Task.FromResult(actualPosition);
