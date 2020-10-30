@@ -84,7 +84,7 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
         }
 
         public IEnumerable<Gamecard> GetUnusedGamecards()
-            => Gamecard.GetAllCards().Except(this.Select(g => g.Card!).Distinct());
+            => Gamecard.GetAllCards().Except(this.Select(g => g.Card!)).ToArray();
 
         public IEnumerable<(int x, int y)> GetFreePositions() 
             => this.Where(i => i.Card is null).Select(i => i.Position);
@@ -94,38 +94,39 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
             TrySetCard((x, y), gamecard);
 
             var rightRowInfo = CalulateRightRow(x);
-            var leftRowInfo = CalulateRightRow(y);
+            var leftRowInfo = CalulateLeftRow(y);
             var topRowInfo = CalulateTopRow((x, y) switch
             {
-                (2, 0) or (3, 1) or (4, 2) => 1,
-                (1, 0) or (2, 1) or (3, 2) or (4, 3) => 2,
-                (1, 1) or (2, 2) or (3, 3) or (4, 4) or (5, 5) => 3,
-                (0, 1) or (1, 2) or (2, 3) or (3, 4) => 4,
-                (0, 2) or (1, 3) or (2, 4) => 5,
+                (2, 0) or (3, 1) or (4, 2) => 0,
+                (1, 0) or (2, 1) or (3, 2) or (4, 3) => 1,
+                (0, 0) or (1,1) or (2, 2) or (3, 3) or (4, 4) => 2,
+                (0, 1) or (1, 2) or (2, 3) or (3, 4) => 3,
+                (0, 2) or (1, 3) or (2, 4) => 4,
                 _ => throw new ArgumentException()
             });
+            //Console.WriteLine(ToString());
             if (removeAfterCalculate) TryUndoLastMove();
             return new PositionInfo(leftRowInfo, rightRowInfo, topRowInfo);
         }
 
-        private RowInfo CalulateTopRow(int row)
+        public RowInfo CalulateTopRow(int row)
         {
             (int x, int y) cord = row switch
             {
-                1 => (0, 2),
-                2 => (0, 1),
-                3 => (0, 0),
-                4 => (1, 0),
-                5 => (2, 0),
+                0 => (0, 2),
+                1 => (0, 1),
+                2 => (0, 0),
+                3 => (1, 0),
+                4 => (2, 0),
                 _ => throw new ArgumentException()
             };
-            int maxCount = 5 - (cord.x + cord.y);
             int number = 0;
             bool isFinished = true;
             bool isCorruped = false;
-            for (int i = 0; i < maxCount; i++)
+            var length = GetCountByRow(row);
+            for (int i = 0; i < length; i++)
             {
-                if (_field[cord.y + 1,cord.x + i] is Gamecard card)
+                if (_field[cord.y + i,cord.x + i] is Gamecard card && card is not null)
                 {
                     if (number == 0)
                     {
@@ -142,17 +143,19 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
                     isFinished = false;
                 }
             }
-            return new RowInfo(isFinished, isCorruped, (isCorruped ? maxCount * number : 0));
+            return new RowInfo(isFinished, isCorruped, isCorruped ? 0 : length * number );
         }
 
-        private RowInfo CalulateRightRow(int row)
+        public RowInfo CalulateRightRow(int row)
         {
             int number = 0;
             bool isFinished = true;
             bool isCorruped = false;
-            for (int i = 0; i < (2 + row % 3); i++)
+            var start = GetStartIndex(row);
+            var end = GetEndIndex(row);
+            for (int i = start; i < end; i++)
             {
-                if (_field[i,row] is Gamecard card)
+                if (_field[row,i] is Gamecard card)
                 {
                     if (number == 0)
                     {
@@ -169,17 +172,20 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
                     isFinished = false;
                 }
             }
-            return new RowInfo(isFinished, isCorruped, (isCorruped ? (2 + row % 3) * number : 0));
+            var length = GetCountByRow(row);
+            return new RowInfo(isFinished, isCorruped, isCorruped ? 0 : length * number);
         }
 
-        private RowInfo CalulateLeftRow(int row)
+        public RowInfo CalulateLeftRow(int row)
         {
             int number = 0;
             bool isFinished = true;
             bool isCorruped = false;
-            for (int i = 0; i < (2 + row % 3); i++)
+            var start = GetStartIndex(row);
+            var end = GetEndIndex(row);
+            for (int i = start; i < end; i++)
             {
-                if (_field[row,i] is Gamecard card)
+                if (_field[i,row] is Gamecard card)
                 {
                     if (number == 0)
                     {
@@ -196,39 +202,95 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
                     isFinished = false;
                 }
             }
-            return new RowInfo(isFinished, isCorruped, (isCorruped ? (2 + row % 3) * number : 0));
+            var length = GetCountByRow(row);
+            return new RowInfo(isFinished, isCorruped, isCorruped ? 0 : length * number);
+        }
+
+        public int GetBoardPoints()
+        {
+            var numbers = Enumerable.Range(0, 4);
+            var left = numbers.Select(i => CalulateLeftRow(i).Points).Sum();
+            var right = numbers.Select(i => CalulateRightRow(i).Points).Sum();
+            var top = numbers.Select(i => CalulateTopRow(i).Points).Sum();
+            return left + right + top;
         }
 
         public override string ToString()
         {
             var builder = new StringBuilder();
 
-            builder.AppendLine(@$"       Y/X         ---                     ");
-            builder.AppendLine(@$"                 /     \                   ");
+            builder.AppendLine(@$"                   ---                     ");
+            builder.AppendLine(@$"                 /  {this[(4,4)]?.Top ?? 0}  \                   ");
             builder.AppendLine(@$"             ---         ---               ");
-            builder.AppendLine(@$"           /     \     /     \             ");
+            builder.AppendLine(@$"           /  {this[(4, 3)]?.Top ?? 0}  \ {this[(4, 4)]?.Left ?? 0}/{this[(4, 4)]?.Right ?? 0} /  {this[(3, 4)]?.Top ?? 0}  \             ");
             builder.AppendLine(@$"       ---         ---         ---         ");
-            builder.AppendLine(@$"     /     \     /     \     /     \       ");
+            builder.AppendLine(@$"     /  {this[(4, 2)]?.Top ?? 0}  \ {this[(4, 3)]?.Left ?? 0}/{this[(4, 3)]?.Right ?? 0} /  {this[(3, 3)]?.Top ?? 0}  \ {this[(3, 4)]?.Left ?? 0}/{this[(3, 4)]?.Right ?? 0} /  {this[(2, 4)]?.Top ?? 0}  \       ");
             builder.AppendLine(@$"             ---         ---               ");
-            builder.AppendLine(@$"     \     /     \     /     \     /       ");
+            builder.AppendLine(@$"     \ {this[(4, 2)]?.Left ?? 0}/{this[(4, 2)]?.Right ?? 0} /  {this[(3, 2)]?.Top ?? 0}  \ {this[(3, 3)]?.Left ?? 0}/{this[(3, 3)]?.Right ?? 0} /  {this[(2, 3)]?.Top ?? 0}  \ {this[(2, 4)]?.Left ?? 0}/{this[(2, 4)]?.Right ?? 0} /       ");
             builder.AppendLine(@$"       ---         ---         ---         ");
-            builder.AppendLine(@$"     /     \     /     \     /     \       ");
+            builder.AppendLine(@$"     /  {this[(3, 1)]?.Top ?? 0}  \ {this[(3, 2)]?.Left ?? 0}/{this[(3, 2)]?.Right ?? 0} /  {this[(2, 2)]?.Top ?? 0}  \ {this[(2, 3)]?.Left ?? 0}/{this[(2, 3)]?.Right ?? 0} /  {this[(1, 3)]?.Top ?? 0}  \       ");
             builder.AppendLine(@$"             ---         ---               ");
-            builder.AppendLine(@$"     \     /     \     /     \     /       ");
+            builder.AppendLine(@$"     \ {this[(3, 1)]?.Left ?? 0}/{this[(3, 1)]?.Right ?? 0} /  {this[(2, 1)]?.Top ?? 0}  \ {this[(2, 2)]?.Left ?? 0}/{this[(2, 2)]?.Right ?? 0} /  {this[(1, 2)]?.Top ?? 0}  \ {this[(1, 3)]?.Left ?? 0}/{this[(1, 3)]?.Right ?? 0} /       ");
             builder.AppendLine(@$"       ---         ---         ---         ");
-            builder.AppendLine(@$"     /     \     /     \     /     \       ");
+            builder.AppendLine(@$"     /  {this[(2, 0)]?.Top ?? 0}  \ {this[(2, 1)]?.Left ?? 0}/{this[(2, 1)]?.Right ?? 0} /  {this[(1, 1)]?.Top ?? 0}  \ {this[(1, 2)]?.Left ?? 0}/{this[(1, 2)]?.Right ?? 0} /  {this[(0, 2)]?.Top ?? 0}  \       ");
             builder.AppendLine(@$"             ---         ---               ");
-            builder.AppendLine(@$"     \     /     \     /     \     /       ");
+            builder.AppendLine(@$"     \ {this[(2, 0)]?.Left ?? 0}/{this[(2, 0)]?.Right ?? 0} /  {this[(1, 0)]?.Top ?? 0}  \ {this[(1, 1)]?.Left ?? 0}/{this[(1, 1)]?.Right ?? 0} /  {this[(0, 1)]?.Top ?? 0}  \ {this[(0, 2)]?.Left ?? 0}/{this[(0, 2)]?.Right ?? 0} /       ");
             builder.AppendLine(@$"       ---         ---         ---         ");
-            builder.AppendLine(@$"           \     /     \     /             ");
+            builder.AppendLine(@$"           \ {this[(1, 0)]?.Left ?? 0}/{this[(1, 0)]?.Right ?? 0} /  {this[(0, 0)]?.Top ?? 0}  \ {this[(0, 1)]?.Left ?? 0}/{this[(0, 1)]?.Right ?? 0} /             ");
             builder.AppendLine(@$"             ---         ---               ");
-            builder.AppendLine(@$"                 \     /                   ");
+            builder.AppendLine(@$"                 \ {this[(0, 0)]?.Left ?? 0}/{this[(0, 0)]?.Right ?? 0} /                   ");
             builder.AppendLine(@$"                   ---                     ");
 
 
-           
+            //                   ---
+            //             ___ / 4/4 \ ___ 
+            //           / 4/3 \     / 3/4 \     
+            //      ___  \       ---         ---
+            //    / 4/2    ___ / 3/3 \ ___ / 2/4 \
+            //    \ ___  / 3/2 \     / 2/3 \     /
+            //    / 3/1  \       ---         ---
+            //    \        ___ / 2/2 \ ___ / 1/3 \
+            //      ___  / 2/1 \     / 1/2 \     /
+            //    / 2/0  \       ---         ---
+            //    \ Y/X    ___ / 1/1 \ ___ / 0/2 \
+            //      ___  / 1/0 \     / 0/1 \ Y/X /
+            //           \ Y/X   ---   Y/X   ---
+            //             ___ / 0/0 \ ___ / 
+            //                 \ Y/X /    
+            //                   ---
 
-            return base.ToString();
+            return builder.ToString();
+        }
+
+
+        private static int GetCountByRow(int row) => row switch
+        {
+            0 or 4 => 3,
+            1 or 3 => 4,
+            2 => 5,
+            _ => throw new NotImplementedException()
+        };
+
+        private static int GetStartIndex(int row)
+        {
+            return row switch
+            {
+                <= 2 => 0,
+                3 => 1,
+                4 => 2,
+                _ => throw new ArgumentException()
+            };
+        }
+
+        private static int GetEndIndex(int row)
+        {
+            return row switch
+            {
+                0 => 3,
+                1 => 4,
+                >= 2 => 5,
+                _ => throw new ArgumentException()
+            };
         }
     }
 }

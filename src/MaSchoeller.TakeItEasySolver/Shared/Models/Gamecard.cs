@@ -10,6 +10,17 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
     {
         public static IEnumerable<Gamecard> GetAllCards()
         {
+            //Nines
+            yield return new Gamecard(9, 3, 2);
+            yield return new Gamecard(9, 4, 2);
+            yield return new Gamecard(9, 8, 2);
+            yield return new Gamecard(9, 3, 6);
+            yield return new Gamecard(9, 3, 7);
+            yield return new Gamecard(9, 4, 6);
+            yield return new Gamecard(9, 4, 7);
+            yield return new Gamecard(9, 8, 6);
+            yield return new Gamecard(9, 8, 7);
+
             //Ones
             yield return new Gamecard(1,3,2);
             yield return new Gamecard(1,4,2);
@@ -32,16 +43,6 @@ namespace MaSchoeller.TakeItEasySolver.Shared.Models
             yield return new Gamecard(5, 8, 6);
             yield return new Gamecard(5, 8, 7);
 
-            //Nines
-            yield return new Gamecard(9, 3, 2);
-            yield return new Gamecard(9, 4, 2);
-            yield return new Gamecard(9, 8, 2);
-            yield return new Gamecard(9, 3, 6);
-            yield return new Gamecard(9, 3, 7);
-            yield return new Gamecard(9, 4, 6);
-            yield return new Gamecard(9, 4, 7);
-            yield return new Gamecard(9, 8, 6);
-            yield return new Gamecard(9, 8, 7);
         }
     }
 }
